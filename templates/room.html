@@ -1,7 +1,6 @@
 {% extends 'base.html' %} {% block content %}
 <div class="message-box">
-  <button type="button" name="leave" id="leave-btn" onClick="leave_room(session.get('room'))">Leave Room</button>
-  <h2>{{names[0]}}'s Chat Room: {{code}}</h2>
+  <h2>Chat Room: {{code}}</h2>
   <div class="messages" id="messages"></div>
   <div class="inputs">
     <input
