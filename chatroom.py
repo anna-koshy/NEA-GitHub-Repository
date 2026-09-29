@@ -43,20 +43,20 @@ def start():
         if len(name) < 2: 
             return render_template("start.html", error="Name must be at least 2 characters.", code=code, name=name)
         
-        #Error for if user tries to join a room without entering a code
-        if join and not code:
-            return render_template("start.html", error="Please enter a room code.", code=code, name=name)
-        
         room = code
         if create != False:
             #Generate a unique 5-letter code for the new room
             room = generate_unique_code(5)
             #Initialises room as dictionary with empty fields
             rooms[room] = {"members": 0, "messages": [], "names": [], "host": ""} 
-            
+
+        #Error for if user tries to join a room without entering a code
+        elif not code:
+            return render_template("start.html", error="Please enter a room code.", code=code, name=name)
+              
         #Error for if user enters a non-existent room code
         elif code not in rooms: 
-            return render_template("start.html", error="Access code does not match any existing lobby.", code=code, name=name)
+            return render_template("start.html", error=f"Access code {code} does not match any existing lobby.", code=code, name=name)
         
         #Error for if user enters a non-unique name for that room
         elif name in rooms[room]["names"]: 
@@ -82,9 +82,8 @@ def room():
         # Send user to start page as an error has occurred
         return redirect(url_for("start")) 
     
-    #Stay in room
-    return render_template("room.html", code=room, messages=rooms[room]["messages"], names=rooms[room]["names"]) #Sends user to the appropriate room page
-
+    #Stay in room as no error has occurred
+    return render_template("room.html", code=room, messages=rooms[room]["messages"], names=rooms[room]["names"]) 
 
 @app.route("/rules")
 def rules():
