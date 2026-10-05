@@ -53,7 +53,7 @@ def start():
         #Error for if user tries to join a room without entering a code
         elif not code:
             return render_template("start.html", error="Please enter a room code.", code=code, name=name)
-              
+
         #Error for if user enters a non-existent room code
         elif code not in rooms: 
             return render_template("start.html", error=f"Access code {code} does not match any existing lobby.", code=code, name=name)
