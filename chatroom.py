@@ -92,6 +92,7 @@ def rules():
 @socketio.on("message")
 def message(data):
     room = session.get("room")
+    #Retrieves the identifier of the room the user is in
     if room not in rooms:
         #Returns nothing as room is non-existent
         return 
@@ -105,6 +106,7 @@ def message(data):
     send(content, to=room) 
     #Stores the content in the room's message history
     rooms[room]["messages"].append(content) 
+    
     
 @socketio.on("connect")
 def connect(auth): 
@@ -124,7 +126,7 @@ def connect(auth):
     join_room(room) 
     
     #Announce to the room that a new user has joined
-    send({"name": name, "message": "has entered the room"}, to=room) 
+    send({"name": name, "message": "has entered the lobby"}, to=room) 
     
     #Increments the number of members in the room by 1, 
     #adds the name of the new user to the list of names in the room, 
@@ -132,6 +134,8 @@ def connect(auth):
     rooms[room]["members"] += 1 
     rooms[room] ["names"].append(name) 
     rooms[room]["host"] = rooms[room]["names"][0]
+    
+    
 @socketio.on("disconnect")
 def disconnect():
     #Retrieve room code and user name
@@ -143,7 +147,7 @@ def disconnect():
 
     if room in rooms:
         #Announces to the room that user has left
-        send({"name": name, "message": "has left the room"}, to=room) 
+        send({"name": name, "message": "has left the lobby"}, to=room) 
         
         #Decrements the number of members in the room by 1,
         #removes the name of the user from the list of names in the room, 
