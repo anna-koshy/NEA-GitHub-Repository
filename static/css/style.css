@@ -12,6 +12,13 @@
   gap: 10px;
 }
 
+.row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .join {
   display: flex;
   flex-direction: row;

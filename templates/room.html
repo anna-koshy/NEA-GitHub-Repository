@@ -1,5 +1,13 @@
 {% extends 'base.html' %} {% block content %}
 <div class="message-box">
+  <div class = "row">
+    <div class ="rules">
+      <button type="submit" name="rules" value = "true">Game Rules</button>
+    </div>
+    <div class ="start">
+      <button type="submit" name="start" value = "true">Start Game</button>
+    </div>
+  </div>
   <h2>Names: {{names}}</h2>
   <h2>Lobby: {{code}}</h2>
   <div class="messages" id="messages"></div>
