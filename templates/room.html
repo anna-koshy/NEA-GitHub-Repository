@@ -2,11 +2,11 @@
 <div class="message-box">
   <div class = "row">
     <div class ="rules">
-      <button type="submit" name="rules" value = "true">Game Rules</button>
+      <button type="button" onclick="window.location.href='{{ url_for('rules') }}'">Game Rules</button>
     </div>
-    <div class ="start">
-      <button type="submit" name="start" value = "true">Start Game</button>
-    </div>
+  <div class="start">
+    <button type="button" id="start-game" {% if not is_host %}hidden{% endif %}>Start Game</button>
+  </div>
   </div>
   <h2>Names: {{names}}</h2>
   <h2>Lobby: {{code}}</h2>
@@ -53,6 +53,24 @@
     socketio.emit("message", { data: message.value });
     message.value = "";
   };
+
+  const currentPlayerName = {{ session["name"] | tojson }};
+
+  socketio.on("update_players", (names) => {
+    const playerList = document.getElementById("player-list");
+    playerList.replaceChildren();
+
+    names.forEach((name) => {
+      const item = document.createElement("li");
+      item.textContent = name;
+      playerList.appendChild(item);
+    });
+  });
+
+  socketio.on("update_host", (host) => {
+    const startButton = document.getElementById("start-game");
+    startButton.hidden = (host !== currentPlayerName);
+  });
 </script>
 {% for msg in messages %}
 <script type="text/javascript">

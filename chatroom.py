@@ -75,15 +75,17 @@ def start():
 def room():
     #Retrieve room code and user name
     room = session.get("room")
-    name = session.get("name") 
-    
+    name = session.get("name")
+
     #Check room code and name exist
     if room is None or name is None or room not in rooms: 
         # Send user to start page as an error has occurred
         return redirect(url_for("start")) 
     
     #Stay in room as no error has occurred
-    return render_template("room.html", code=room, messages=rooms[room]["messages"], names=rooms[room]["names"]) 
+    return render_template("room.html", code=room, messages=rooms[room]["messages"], 
+                    names=rooms[room]["names"], is_host=(name == rooms[room]["host"])) 
+    socketio.emit("update_host", rooms[room]["host"],to=room)
 
 @app.route("/rules")
 def rules():
@@ -92,6 +94,7 @@ def rules():
 @socketio.on("message")
 def message(data):
     room = session.get("room")
+    
     #Retrieves the identifier of the room the user is in
     if room not in rooms:
         #Returns nothing as room is non-existent
@@ -122,18 +125,21 @@ def connect(auth):
         leave_room(room)
         return
     
-    #Join user to room corresponding to the room code
-    join_room(room) 
-    
-    #Announce to the room that a new user has joined
-    send({"name": name, "message": "has entered the lobby"}, to=room) 
-    
     #Increments the number of members in the room by 1, 
     #adds the name of the new user to the list of names in the room, 
     #and sets the first user to join the room as the host
     rooms[room]["members"] += 1 
     rooms[room] ["names"].append(name) 
     rooms[room]["host"] = rooms[room]["names"][0]
+    
+        #Join user to room corresponding to the room code
+    join_room(room) 
+    
+    #Announce to the room that a new user has joined
+    send({"name": name, "message": "has entered the lobby"}, to=room) 
+    
+    
+    
     
     
 @socketio.on("disconnect")
@@ -158,6 +164,8 @@ def disconnect():
         #Deletes the room if there are no members left
         if rooms[room]["members"] <= 0:
             del rooms[room]
+        
+        socketio.emit("update_host", rooms[room]["host"],to=room)
     
 
 
