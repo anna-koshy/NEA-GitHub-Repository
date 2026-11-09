@@ -5,11 +5,10 @@
       <button type="button" onclick="window.location.href='{{ url_for('rules') }}'">Game Rules</button>
     </div>
   <div class="start">
-    <button type="button" id="start-game" {% if not is_host %}hidden{% endif %}>Start Game</button>
+    <button type="button" id="start-game" {% if not is_host %}hidden{% endif %} onClick="startGame()">Start Game</button>
   </div>
   </div>
-  <h2>Names: {{names}}</h2>
-  <h2>Lobby: {{code}}</h2>
+  <h2> Host: {{host}}, Names: {{names}}, Lobby: {{code}}</h2>
   <div class="messages" id="messages"></div>
   <div class="inputs">
     <input
@@ -66,11 +65,11 @@
       playerList.appendChild(item);
     });
   });
-
-  socketio.on("update_host", (host) => {
-    const startButton = document.getElementById("start-game");
-    startButton.hidden = (host !== currentPlayerName);
+  socketio.on("delete_room", () => {
+    window.location.href = "/";
   });
+  
+
 </script>
 {% for msg in messages %}
 <script type="text/javascript">

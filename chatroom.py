@@ -48,7 +48,7 @@ def start():
             #Generate a unique 5-letter code for the new room
             room = generate_unique_code(5)
             #Initialises room as dictionary with empty fields
-            rooms[room] = {"members": 0, "messages": [], "names": [], "host": ""} 
+            rooms[room] = {"members": 0, "messages": [], "names": [], "host": name} 
 
         #Error for if user tries to join a room without entering a code
         elif not code:
@@ -84,8 +84,7 @@ def room():
     
     #Stay in room as no error has occurred
     return render_template("room.html", code=room, messages=rooms[room]["messages"], 
-                    names=rooms[room]["names"], is_host=(name == rooms[room]["host"])) 
-    socketio.emit("update_host", rooms[room]["host"],to=room)
+                    names=rooms[room]["names"], host = rooms[room]["host"], is_host=(name == rooms[room]["host"])) 
 
 @app.route("/rules")
 def rules():
@@ -130,11 +129,9 @@ def connect(auth):
     #and sets the first user to join the room as the host
     rooms[room]["members"] += 1 
     rooms[room] ["names"].append(name) 
-    rooms[room]["host"] = rooms[room]["names"][0]
     
         #Join user to room corresponding to the room code
     join_room(room) 
-    
     #Announce to the room that a new user has joined
     send({"name": name, "message": "has entered the lobby"}, to=room) 
     
@@ -160,12 +157,14 @@ def disconnect():
         #and sets the first user in the list of names as the (new) host
         rooms[room]["members"] -= 1 
         rooms[room]["names"].remove(name)
-        rooms[room]["host"] = rooms[room]["names"][0]
+        
         #Deletes the room if there are no members left
         if rooms[room]["members"] <= 0:
             del rooms[room]
-        
-        socketio.emit("update_host", rooms[room]["host"],to=room)
+        if name == rooms[room]["host"]:
+            socketio.emit("delete_room", rooms[room],to=room)
+            del rooms[room]
+
     
 
 
