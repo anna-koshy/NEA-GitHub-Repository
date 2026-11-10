@@ -164,9 +164,23 @@ def disconnect():
         if name == rooms[room]["host"]:
             socketio.emit("delete_room", rooms[room],to=room)
             del rooms[room]
-
+            
+@socketio.on("start_game")
+def start_game():
+    room = session.get("room")
+    name = session.get("name")
     
+    #Check if the user is the host
+    if room in rooms and name == rooms[room]["host"]:
+        #Emit a message to all users in the room to start the game
+        socketio.emit("mission", rooms[room], to=room)
 
+@app.route("/mission")
+def mission():
+    room = session.get("room")
+    name = session.get("name")
+    
+    return render_template("mission.html")
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)

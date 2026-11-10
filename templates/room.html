@@ -5,10 +5,10 @@
       <button type="button" onclick="window.location.href='{{ url_for('rules') }}'">Game Rules</button>
     </div>
   <div class="start">
-    <button type="button" id="start-game" {% if not is_host %}hidden{% endif %} onClick="startGame()">Start Game</button>
+    <button type="button" id="start-game" {% if not is_host %}hidden{% endif %} onClick=startGame()>Start Game</button>
   </div>
   </div>
-  <h2> Host: {{host}}, Names: {{names}}, Lobby: {{code}}</h2>
+  <h2> Host: {{host}}, Lobby: {{code}}</h2>
   <div class="messages" id="messages"></div>
   <div class="inputs">
     <input
@@ -53,22 +53,17 @@
     message.value = "";
   };
 
-  const currentPlayerName = {{ session["name"] | tojson }};
-
-  socketio.on("update_players", (names) => {
-    const playerList = document.getElementById("player-list");
-    playerList.replaceChildren();
-
-    names.forEach((name) => {
-      const item = document.createElement("li");
-      item.textContent = name;
-      playerList.appendChild(item);
-    });
-  });
   socketio.on("delete_room", () => {
     window.location.href = "/";
   });
+
+  const startGame = () => {
+    socketio.emit("start_game");
+  };
   
+  socketio.on("mission", () => {
+    window.location.href = "/mission";
+  });
 
 </script>
 {% for msg in messages %}
