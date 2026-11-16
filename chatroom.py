@@ -9,6 +9,9 @@ app.config["SECRET_KEY"] = "annakoshkey"
 socketio = SocketIO(app)
 
 rooms = {}
+min_players = 4
+max_players = 8
+
 #Length: integer - the length of the code to be generated
 def generate_unique_code(length): 
     #Loop until unique code is generated
@@ -62,6 +65,10 @@ def start():
         elif name in rooms[room]["names"]: 
             return render_template("start.html", error="Choose another name: this player already exists in the lobby.", 
             code=code, name=name)
+        
+        #Error for if user tries to join a full lobby
+        elif rooms[room]["members"] >= max_players:
+            return render_template("start.html", error="Lobby is full. Please try again later.", code=code, name=name)
         
         session["room"] = room
         session["name"] = name
@@ -126,7 +133,6 @@ def connect(auth):
     
     #Increments the number of members in the room by 1, 
     #adds the name of the new user to the list of names in the room, 
-    #and sets the first user to join the room as the host
     rooms[room]["members"] += 1 
     rooms[room] ["names"].append(name) 
     
@@ -154,26 +160,38 @@ def disconnect():
         
         #Decrements the number of members in the room by 1,
         #removes the name of the user from the list of names in the room, 
-        #and sets the first user in the list of names as the (new) host
         rooms[room]["members"] -= 1 
         rooms[room]["names"].remove(name)
         
         #Deletes the room if there are no members left
         if rooms[room]["members"] <= 0:
             del rooms[room]
+        #Deletes the room if the user trying to leave is the host
         if name == rooms[room]["host"]:
             socketio.emit("delete_room", rooms[room],to=room)
             del rooms[room]
             
 @socketio.on("start_game")
 def start_game():
+    #Retrieve room code and user name
     room = session.get("room")
     name = session.get("name")
     
-    #Check if the user is the host
-    if room in rooms and name == rooms[room]["host"]:
-        #Emit a message to all users in the room to start the game
-        socketio.emit("mission", rooms[room], to=room)
+    #Check if room is valid
+    #Checks if the user is the host as the host in the only user with this permission
+    #Checks if min player requirement is fulfilled
+    if room in rooms and name == rooms[room]["host"] and rooms[room]["members"] >= min_players:
+        #Redirects all users in the room to the role assignment page
+        socketio.emit("roleassignment", rooms[room], to=room)
+
+@app.route("/roleassignment")
+def roleassignment():
+    #Retrieve room code and user name
+    room = session.get("room")
+    name = session.get("name")
+
+    #Directing user to role assignment page
+    return render_template("roleassignment.html")
 
 @app.route("/mission")
 def mission():
@@ -181,6 +199,7 @@ def mission():
     name = session.get("name")
     
     return render_template("mission.html")
+
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
