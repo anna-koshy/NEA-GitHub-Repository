@@ -91,7 +91,7 @@ def room():
     
     #Stay in room as no error has occurred
     return render_template("room.html", code=room, messages=rooms[room]["messages"], 
-                    names=rooms[room]["names"], host = rooms[room]["host"], is_host=(name == rooms[room]["host"])) 
+        names=rooms[room]["names"], host = rooms[room]["host"], is_host=(name == rooms[room]["host"])) 
 
 @app.route("/rules")
 def rules():
@@ -177,26 +177,38 @@ def start_game():
     room = session.get("room")
     name = session.get("name")
     
-    #Check if room is valid
+    #Checks if room is valid
     #Checks if the user is the host as the host in the only user with this permission
     #Checks if min player requirement is fulfilled
-    if room in rooms and name == rooms[room]["host"] and rooms[room]["members"] >= min_players:
-        #Redirects all users in the room to the role assignment page
-        socketio.emit("roleassignment", rooms[room], to=room)
+    if room in rooms and name == rooms[room]["host"]:
+        if rooms[room]["members"] >= min_players:
+            #Redirects all users in the room to the role assignment page
+            socketio.emit("roleassignment", rooms[room], to=room)
+        else:
+            socketio.emit("error", {"message": f"At least {min_players} players are required to start the game."}, to=room)
 
 @app.route("/roleassignment")
 def roleassignment():
     #Retrieve room code and user name
     room = session.get("room")
     name = session.get("name")
-
+    #Check room code and name exist
+    #if room is None or name is None or room not in rooms: 
+        # Send user to start page as an error has occurred
+        #return redirect(url_for("start")) 
+    
     #Directing user to role assignment page
-    return render_template("roleassignment.html")
+    return render_template("roleassignment.html", code = room, names = rooms[room]["names"], name = name)
 
 @app.route("/mission")
 def mission():
     room = session.get("room")
     name = session.get("name")
+    
+    #Check room code and name exist
+    if room is None or name is None or room not in rooms: 
+        # Send user to start page as an error has occurred
+        return redirect(url_for("start")) 
     
     return render_template("mission.html")
 
