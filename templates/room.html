@@ -2,7 +2,7 @@
 <div class="message-box">
   <div class = "row">
     <div class ="rules">
-      <button type="button" onclick="window.location.href='{{ url_for('rules') }}'">Game Rules</button>
+      <button type="button" onclick="alert('Game Rules: ...')">Game Rules</button>
     </div>
   <div class="start">
     <button type="button" id="start-game" {% if not is_host %}hidden{% endif %} onClick=startGame()>Start Game</button>
@@ -63,6 +63,10 @@
   
   socketio.on("roleassignment", () => {
     window.location.href = "/roleassignment";
+  });
+
+  socketio.on("insufficient_players", () => {
+    alert("Not enough players to start the game.");
   });
 
 </script>

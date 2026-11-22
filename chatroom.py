@@ -34,10 +34,6 @@ def start():
         code = request.form.get("code")
         join = request.form.get("join", False)
         create = request.form.get("create", False)
-        rules = request.form.get("rules", False)
-        
-        if rules:
-            return redirect(url_for("rules"))
         
         if not name:
             return render_template("start.html", error="Please enter a name.", code=code, name=name)
@@ -68,10 +64,12 @@ def start():
         
         #Error for if user tries to join a full lobby
         elif rooms[room]["members"] >= max_players:
-            return render_template("start.html", error="Lobby is full. Please try again later.", code=code, name=name)
+            return render_template("start.html", error="This lobby is full.", code=code, name=name)
         
         session["room"] = room
         session["name"] = name
+        
+        
         # Sends user to the room page
         return redirect(url_for("room")) 
     
@@ -92,10 +90,6 @@ def room():
     #Stay in room as no error has occurred
     return render_template("room.html", code=room, messages=rooms[room]["messages"], 
         names=rooms[room]["names"], host = rooms[room]["host"], is_host=(name == rooms[room]["host"])) 
-
-@app.route("/rules")
-def rules():
-    return render_template("gamerules.html")
 
 @socketio.on("message")
 def message(data):
@@ -185,7 +179,7 @@ def start_game():
             #Redirects all users in the room to the role assignment page
             socketio.emit("roleassignment", rooms[room], to=room)
         else:
-            socketio.emit("error", {"message": f"At least {min_players} players are required to start the game."}, to=room)
+            socketio.emit("insufficient_players", to=request.sid)
 
 @app.route("/roleassignment")
 def roleassignment():
@@ -198,7 +192,7 @@ def roleassignment():
         #return redirect(url_for("start")) 
     
     #Directing user to role assignment page
-    return render_template("roleassignment.html", code = room, names = rooms[room]["names"], name = name)
+    return render_template("roleassignment.html", code = room, name = name)
 
 @app.route("/mission")
 def mission():
@@ -214,4 +208,4 @@ def mission():
 
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)
