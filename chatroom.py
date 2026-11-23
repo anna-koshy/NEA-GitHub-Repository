@@ -179,6 +179,7 @@ def start_game():
             #Redirects all users in the room to the role assignment page
             socketio.emit("roleassignment", rooms[room], to=room)
         else:
+            #Displays error message if min player requirement is not fulfilled
             socketio.emit("insufficient_players", to=request.sid)
 
 @app.route("/roleassignment")
@@ -186,10 +187,6 @@ def roleassignment():
     #Retrieve room code and user name
     room = session.get("room")
     name = session.get("name")
-    #Check room code and name exist
-    #if room is None or name is None or room not in rooms: 
-        # Send user to start page as an error has occurred
-        #return redirect(url_for("start")) 
     
     #Directing user to role assignment page
     return render_template("roleassignment.html", code = room, name = name)
