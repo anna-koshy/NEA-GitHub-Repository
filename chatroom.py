@@ -10,6 +10,7 @@ socketio = SocketIO(app)
 
 rooms = {}
 min_players = 4
+mid_players = 6
 max_players = 8
 
 #Length: integer - the length of the code to be generated
@@ -47,7 +48,7 @@ def start():
             #Generate a unique 5-letter code for the new room
             room = generate_unique_code(5)
             #Initialises room as dictionary with empty fields
-            rooms[room] = {"members": 0, "messages": [], "names": [], "host": name} 
+            rooms[room] = {"members": 0, "messages": [], "names": [], "host": name, "roles": []} 
 
         #Error for if user tries to join a room without entering a code
         elif not code:
@@ -128,7 +129,7 @@ def connect(auth):
     #Increments the number of members in the room by 1, 
     #adds the name of the new user to the list of names in the room, 
     rooms[room]["members"] += 1 
-    rooms[room] ["names"].append(name) 
+    rooms[room]["names"].append(name) 
     
         #Join user to room corresponding to the room code
     join_room(room) 
@@ -176,8 +177,13 @@ def start_game():
     #Checks if min player requirement is fulfilled
     if room in rooms and name == rooms[room]["host"]:
         if rooms[room]["members"] >= min_players:
+            if rooms[room]["members"] >= mid_players:
+                rooms[room]["roles"] = ["Traitor"] * 2 + ["Faithful"] * (rooms[room]["members"] - 2)
+            else:
+                rooms[room]["roles"] = ["Traitor"] + ["Faithful"] * (rooms[room]["members"] - 1)
+            random.shuffle(rooms[room]["roles"])
             #Redirects all users in the room to the role assignment page
-            socketio.emit("roleassignment", rooms[room], to=room)
+            socketio.emit("roleassignment", room = rooms[room], to=room)
         else:
             #Displays error message if min player requirement is not fulfilled
             socketio.emit("insufficient_players", to=request.sid)
@@ -188,8 +194,11 @@ def roleassignment():
     room = session.get("room")
     name = session.get("name")
     
+    player_num = rooms[room]["names"].index(name)
+    role = rooms[room]["roles"][player_num]
+    
     #Directing user to role assignment page
-    return render_template("roleassignment.html", code = room, name = name)
+    return render_template("roleassignment.html", code = room, name = name, role = role)
 
 @app.route("/mission")
 def mission():
