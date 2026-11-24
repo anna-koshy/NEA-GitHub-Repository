@@ -63,6 +63,7 @@
   
   socketio.on("roleassignment", () => {
     window.location.href = "/roleassignment";
+    room = "{{code}}";
   });
 
   socketio.on("insufficient_players", () => {

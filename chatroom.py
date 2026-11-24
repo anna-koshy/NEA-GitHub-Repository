@@ -48,7 +48,7 @@ def start():
             #Generate a unique 5-letter code for the new room
             room = generate_unique_code(5)
             #Initialises room as dictionary with empty fields
-            rooms[room] = {"members": 0, "messages": [], "names": [], "host": name, "roles": []} 
+            rooms[room] = {"members": 0, "messages": [], "names": [], "host": name, "roles": [], "started": False} 
 
         #Error for if user tries to join a room without entering a code
         elif not code:
@@ -60,12 +60,16 @@ def start():
         
         #Error for if user enters a non-unique name for that room
         elif name in rooms[room]["names"]: 
-            return render_template("start.html", error="Choose another name: this player already exists in the lobby.", 
+            return render_template("start.html", error=f"Choose another name: {name} already exists in the lobby.", 
             code=code, name=name)
         
         #Error for if user tries to join a full lobby
         elif rooms[room]["members"] >= max_players:
             return render_template("start.html", error="This lobby is full.", code=code, name=name)
+        
+        #Error for if user tries to join a lobby that has already started their game
+        elif rooms[room]["started"]:
+            return render_template("start.html", error="This lobby has already started the game.", code=code, name=name)
         
         session["room"] = room
         session["name"] = name
@@ -158,14 +162,14 @@ def disconnect():
         rooms[room]["members"] -= 1 
         rooms[room]["names"].remove(name)
         
-        #Deletes the room if there are no members left
-        if rooms[room]["members"] <= 0:
-            del rooms[room]
-        #Deletes the room if the user trying to leave is the host
-        if name == rooms[room]["host"]:
-            socketio.emit("delete_room", rooms[room],to=room)
-            del rooms[room]
-            
+        #Ony allows room to be deleted if game has not started yet
+        if not rooms[room][started]:
+            #Deletes the room if the user trying to leave is the host
+            if name == rooms[room]["host"]:
+                socketio.emit("delete_room", rooms[room],to=room)
+                del rooms[room]
+
+
 @socketio.on("start_game")
 def start_game():
     #Retrieve room code and user name
@@ -174,18 +178,36 @@ def start_game():
     
     #Checks if room is valid
     #Checks if the user is the host as the host in the only user with this permission
-    #Checks if min player requirement is fulfilled
     if room in rooms and name == rooms[room]["host"]:
+        
+        #Checks if min player requirement is fulfilled
         if rooms[room]["members"] >= min_players:
+            
+            #Assigns two traitors if lobby has sufficient players
             if rooms[room]["members"] >= mid_players:
-                rooms[room]["roles"] = ["Traitor"] * 2 + ["Faithful"] * (rooms[room]["members"] - 2)
+                for i in range(rooms[room]["members"]):
+                    if i < 2:
+                        rooms[room]["roles"].append("Traitor")
+                    else:
+                        rooms[room]["roles"].append("Faithful")
+            
+            #Assigns one traitor if lobby has insufficient players
             else:
-                rooms[room]["roles"] = ["Traitor"] + ["Faithful"] * (rooms[room]["members"] - 1)
+                for i in range(rooms[room]["members"]):
+                    if i < 1:
+                        rooms[room]["roles"].append("Traitor")
+                    else:
+                        rooms[room]["roles"].append("Faithful")
             random.shuffle(rooms[room]["roles"])
+            print(rooms[room]["roles"])
+            #Toggles started status of room to True to indicate that game has started
+            rooms[room]["started"] = True
+            
             #Redirects all users in the room to the role assignment page
             socketio.emit("roleassignment", room = rooms[room], to=room)
+        
+        #Displays error message to host if min player requirement is not fulfilled
         else:
-            #Displays error message if min player requirement is not fulfilled
             socketio.emit("insufficient_players", to=request.sid)
 
 @app.route("/roleassignment")
@@ -193,6 +215,10 @@ def roleassignment():
     #Retrieve room code and user name
     room = session.get("room")
     name = session.get("name")
+    
+    if room == None or name == None or room not in rooms: 
+        # Send user to start page as an error has occurred
+        return redirect(url_for("start"))
     
     player_num = rooms[room]["names"].index(name)
     role = rooms[room]["roles"][player_num]
